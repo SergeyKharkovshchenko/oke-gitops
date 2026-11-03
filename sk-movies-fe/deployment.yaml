@@ -4,7 +4,12 @@ metadata:
   name: sk-movies-fe
   namespace: default
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: sk-movies-fe
@@ -13,11 +18,29 @@ spec:
       labels:
         app: sk-movies-fe
     spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: sk-movies-fe
       containers:
       - name: sk-movies-fe
         image: ghcr.io/sergeykharkovshchenko/sk-movies-fe:latest
         ports:
         - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 20
         resources:
           limits:
             memory: "128Mi"
